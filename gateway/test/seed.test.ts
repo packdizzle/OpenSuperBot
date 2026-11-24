@@ -1,6 +1,7 @@
 import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import { listBotsWithLastMessage, openDb, threadMembers } from '../src/db.js'
 import { seedGroup, seedTeammates } from '../src/seed.js'
@@ -16,6 +17,16 @@ function makeTeammatesDir(): string {
 }
 
 describe('seedTeammates', () => {
+  it('includes the bundled affiliate operations teammate', () => {
+    const db = openDb(':memory:')
+    const bundledDir = fileURLToPath(new URL('../../teammates', import.meta.url))
+    const ids = seedTeammates(db, bundledDir)
+
+    expect(ids).toContain('affiliate-ops')
+    expect(listBotsWithLastMessage(db).find((bot) => bot.id === 'affiliate-ops'))
+      .toMatchObject({ name: 'Affiliate Ops', role: 'Draft-only affiliate operations and aggregate reporting' })
+  })
+
   it('seeds bots from SOUL.md folders, skips folders without SOUL.md', () => {
     const db = openDb(':memory:')
     const ids = seedTeammates(db, makeTeammatesDir())
